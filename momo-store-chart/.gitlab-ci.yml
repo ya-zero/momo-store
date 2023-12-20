@@ -1,0 +1,46 @@
+stages:
+- release
+- deploy
+
+release-to-nexus:
+  stage: release
+  image: alpine/helm:3.11.1
+  script:
+  - cd momo-store-chart
+  - helm package --dependency-update .
+  - curl --insecure -u $NEXUS_REPO_USER:$NEXUS_REPO_PASS $NEXUS_REPO_URL --upload-file *.tgz
+
+deploy-to-kubernetes:
+  stage: deploy
+  #image: alpine/helm:3.11.1
+  image: alpine/k8s:1.25.14
+  when: manual
+  environment:
+    name: test
+    url: https://momostore1.ru
+  script:
+  before_script:
+    - mkdir -p ~/.kube
+    - cp $KUBE_CONFIG  ~/.kube/config
+    - echo $YC_KEY_JSON > sa-key.json
+  script:
+    #- helm repo add momo-store-nexus $NEXUS_REPO_URL --username=$NEXUS_REPO_USER --password=$NEXUS_REPO_PASS
+    #- helm repo update
+    #- helm upgrade --install momo-store-chart momo-store-nexus/momo-store
+    - |
+      #kubectl config use-context yc-mycluster --namespace=default
+      kubectl config set-cluster yc-mycluster --server="$KUBE_URL" --insecure-skip-tls-verify=true
+      kubectl config set-credentials admin --token="$KUBE_TOKEN"
+      kubectl config set-context default --cluster=yc-mycluster --user=admin
+      kubectl config use-context default
+      kubectl get nodes
+      export HELM_EXPERIMENTAL_OCI=1
+      helm repo add  momo-store-nexus $NEXUS_REPO_URL --username ${NEXUS_REPO_USER} --password ${NEXUS_REPO_PASS}
+      echo "Repo add susses"
+      helm repo update
+      echo "Update susses"
+      helm upgrade --install momo-store-chart momo-store-nexus/momo-store \
+      --kube-context default \
+      --namespace default  \
+      --kube-token $KUBE_TOKEN \
+      --kube-insecure-skip-tls-verify

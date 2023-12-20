@@ -1,0 +1,19 @@
+backend:
+  image: gitlab.praktikum-services.ru:5050/std-019-032/momo-store/momostore-backend
+  replicas: 2
+  containerport: 8081
+  minallowed_cpu: 0
+  minallowed_memory: 0
+  maxallowed_cpu: 1000
+  maxallowed_memory: 512
+
+frontend:
+  fqdn: momostore1.ru
+  image: gitlab.praktikum-services.ru:5050/std-019-032/momo-store/momostore-frontend
+
+ingress:
+  grafana: grafana.momostore1.ru
+  alertmanager: alertmanager.momostore1.ru
+  prometheus: prometheus.momostore1.ru
+  fqdn: momostore1.ru
+  argocd: argocd.momostore1.ru

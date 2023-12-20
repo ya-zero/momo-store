@@ -1,0 +1,81 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "yc-clusterissuer"
+spec:
+  tls:
+    -  hosts:
+       - "{{ .Values.grafana }}"
+       secretName: "grafana-domain-name-secret"
+    -  hosts:
+       - "{{ .Values.alertmanager }}"
+       secretName: "alert-domain-name-secret"
+
+    -  hosts:
+       - "{{ .Values.prometheus }}"
+       secretName: "prom-domain-name-secret"
+
+    -  hosts:
+       - "{{ .Values.fqdn }}"
+       secretName: "domain-name-secret"
+    -  hosts:
+       - "{{ .Values.argocd }}"
+       secretName: "argocd-domain-name-secret"
+
+  rules:
+  - host: {{ .Values.grafana }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-monitoring-grafana
+            port:
+              number: 80
+
+  - host: {{ .Values.fqdn }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+  - host: {{ .Values.argocd }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: argo-cd-argocd-server
+            port:
+              number: 80
+  - host: {{ .Values.alertmanager }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-monitoring-kube-prometh-alertmanager
+            port:
+              number: 9093
+
+  - host: {{ .Values.prometheus }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-monitoring-kube-prometh-prometheus
+            port:
+              number: 9090
